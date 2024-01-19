@@ -3,6 +3,8 @@ package com.appmason.jetcustominputfield
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -22,18 +24,22 @@ class MainActivity : ComponentActivity() {
             JetCustomInputFieldTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier,
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // State to hold the SSN value
                     val ssnValue = remember { mutableStateOf(TextFieldValue()) }
 
-                    SSNInputField(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        ssn = ssnValue
-                    )
+                    Box(
+                        modifier = Modifier.padding(top = 120.dp)
+                    ) {
+                        SSNInputField(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            ssn = ssnValue
+                        )
+                    }
                 }
             }
         }

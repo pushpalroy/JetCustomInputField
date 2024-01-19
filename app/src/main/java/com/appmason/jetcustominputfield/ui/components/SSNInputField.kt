@@ -6,13 +6,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +32,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.appmason.jetcustominputfield.R
 
 @Composable
 fun SSNInputField(
@@ -33,18 +42,22 @@ fun SSNInputField(
     textStyle: TextStyle = TextStyle(
         fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
+        color = Color(0xFF518616),
         letterSpacing = 2.sp
     )
 ) {
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
-            .border(1.dp, Color.Gray, shape)
+            .border(2.dp, Color(0xFF599616), shape)
             .padding(vertical = 4.dp, horizontal = 8.dp)
     ) {
-        // Placeholder text that updates as the user types
-        val displayText = formatAsPlaceholder(ssn.value.text)
+        val placeholderText = remember(ssn.value, isPasswordVisible) {
+            formatAsPlaceholder(ssn.value.text, isPasswordVisible)
+        }
         Text(
-            text = displayText,
+            text = placeholderText,
             style = textStyle.copy(color = Color.LightGray),
             modifier = Modifier.padding(start = 12.dp, top = 12.dp)
         )
@@ -60,16 +73,30 @@ fun SSNInputField(
                 keyboardType = KeyboardType.NumberPassword,
                 imeAction = ImeAction.Done
             ),
-            visualTransformation = SSNVisualTransformation,
+            visualTransformation = if (isPasswordVisible) SSNMaskedVisualTransformation
+            else SSNVisualTransformation,
             textStyle = textStyle,
             modifier = Modifier
                 .clip(shape)
                 .padding(12.dp)
         )
+        IconToggleButton(
+            checked = isPasswordVisible,
+            onCheckedChange = { isPasswordVisible = !isPasswordVisible },
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 8.dp)
+        ) {
+            Icon(
+                painter = if (isPasswordVisible) painterResource(id = R.drawable.ic_show)
+                else painterResource(id = R.drawable.ic_hide),
+                contentDescription = "Toggle SSN visibility"
+            )
+        }
     }
 }
 
-private fun formatAsPlaceholder(input: String): String {
+private fun formatAsPlaceholder(input: String, isPasswordVisible: Boolean): String {
     val placeholder = "XXX - XX - XXXX"
     val inputDigits = input.filter { it.isDigit() }
 
@@ -79,7 +106,7 @@ private fun formatAsPlaceholder(input: String): String {
             if (c == ' ' || c == '-') {
                 append(c)
             } else if (digitIndex < inputDigits.length) {
-                append(inputDigits[digitIndex])
+                if (isPasswordVisible) append(DOT_CHAR) else append(inputDigits[digitIndex])
                 digitIndex++
             } else {
                 append(c)
@@ -88,8 +115,27 @@ private fun formatAsPlaceholder(input: String): String {
     }
 }
 
-
 private val SSNVisualTransformation = VisualTransformation { text ->
+    val visualTransformedString = getVisualTransformedString(text)
+    TransformedText(
+        AnnotatedString(
+            visualTransformedString.first.toString()
+        ),
+        visualTransformedString.second
+    )
+}
+
+private val SSNMaskedVisualTransformation = VisualTransformation { text ->
+    val visualTransformedString = getVisualTransformedString(text)
+    TransformedText(
+        AnnotatedString(
+            visualTransformedString.first.toString().toDotString()
+        ),
+        visualTransformedString.second
+    )
+}
+
+fun getVisualTransformedString(text: AnnotatedString): Pair<StringBuilder, OffsetMapping> {
     val transformedText = StringBuilder()
 
     text.text.forEachIndexed { index, c ->
@@ -116,9 +162,12 @@ private val SSNVisualTransformation = VisualTransformation { text ->
             }
         }
     }
-
-    TransformedText(
-        AnnotatedString(transformedText.toString()),
-        offsetMapping
-    )
+    return Pair(transformedText, offsetMapping)
 }
+
+
+fun String.toDotString(): String {
+    return this.map { if (it == '-') '-' else if (it == ' ') ' ' else DOT_CHAR }.joinToString("")
+}
+
+const val DOT_CHAR = '\u2022'
