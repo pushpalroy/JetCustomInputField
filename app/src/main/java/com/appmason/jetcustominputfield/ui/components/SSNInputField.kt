@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -34,6 +35,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appmason.jetcustominputfield.R
 
+/**
+ * A custom SSN input field for entering Social Security Numbers in a specific format.
+ *
+ * @param modifier Modifier to be applied to the input field.
+ * @param ssn Mutable state holding the text of the SSN input field.
+ * @param shape The shape of the input field.
+ * @param textStyle The text style to be applied to the text inside the input field.
+ * @param testTag Test tag to identify the [BasicTextField]
+ */
 @Composable
 fun SSNInputField(
     modifier: Modifier,
@@ -44,8 +54,15 @@ fun SSNInputField(
         fontWeight = FontWeight.Bold,
         color = Color(0xFF518616),
         letterSpacing = 2.sp
-    )
+    ),
+    testTag: String = "ssn_input_field"
 ) {
+    val testTagModifier = if (testTag.isNotEmpty()) {
+        Modifier.testTag(testTag)
+    } else {
+        Modifier
+    }
+
     var isPasswordVisible by remember { mutableStateOf(false) }
 
     Box(
@@ -79,6 +96,7 @@ fun SSNInputField(
             modifier = Modifier
                 .clip(shape)
                 .padding(12.dp)
+                .then(testTagModifier)
         )
         IconToggleButton(
             checked = isPasswordVisible,
@@ -96,6 +114,15 @@ fun SSNInputField(
     }
 }
 
+/**
+ * Formats the input SSN string by overlaying it on a placeholder template.
+ * The template is 'XXX - XX - XXXX'. Digits from the input replace the 'X's,
+ * and the format is preserved.
+ *
+ * @param input The raw SSN input string.
+ * @param isPasswordVisible Boolean flag to indicate if the SSN should be visible or masked.
+ * @return A formatted string where digits replace placeholder characters.
+ */
 private fun formatAsPlaceholder(input: String, isPasswordVisible: Boolean): String {
     val placeholder = "XXX - XX - XXXX"
     val inputDigits = input.filter { it.isDigit() }
@@ -115,6 +142,12 @@ private fun formatAsPlaceholder(input: String, isPasswordVisible: Boolean): Stri
     }
 }
 
+/**
+ * Visual transformation for displaying the SSN in the format 'XXX - XX - XXXX'.
+ * This transformation adds spaces and hyphens at appropriate positions.
+ *
+ * @return A Pair of transformed text and offset mapping for cursor positioning.
+ */
 private val SSNVisualTransformation = VisualTransformation { text ->
     val visualTransformedString = getVisualTransformedString(text)
     TransformedText(
@@ -125,6 +158,12 @@ private val SSNVisualTransformation = VisualTransformation { text ->
     )
 }
 
+/**
+ * Visual transformation for displaying the SSN in a masked format.
+ * Only the dashes and spaces are visible, while the digits are replaced with dots.
+ *
+ * @return A Pair of transformed text with masked digits and offset mapping for cursor positioning.
+ */
 private val SSNMaskedVisualTransformation = VisualTransformation { text ->
     val visualTransformedString = getVisualTransformedString(text)
     TransformedText(
@@ -135,6 +174,13 @@ private val SSNMaskedVisualTransformation = VisualTransformation { text ->
     )
 }
 
+/**
+ * Generates a visual transformed string suitable for SSN formatting.
+ * This function is used by both visual transformation functions.
+ *
+ * @param text The input text to be transformed.
+ * @return A Pair of StringBuilder (for transformed text) and an OffsetMapping object.
+ */
 fun getVisualTransformedString(text: AnnotatedString): Pair<StringBuilder, OffsetMapping> {
     val transformedText = StringBuilder()
 
@@ -165,9 +211,14 @@ fun getVisualTransformedString(text: AnnotatedString): Pair<StringBuilder, Offse
     return Pair(transformedText, offsetMapping)
 }
 
-
+/**
+ * Extension function to mask a string by replacing all characters except spaces and hyphens with a dot.
+ *
+ * @return A string with all characters except spaces and hyphens replaced by dots.
+ */
 fun String.toDotString(): String {
     return this.map { if (it == '-') '-' else if (it == ' ') ' ' else DOT_CHAR }.joinToString("")
 }
 
+// Constant for the dot character used in masking the SSN.
 const val DOT_CHAR = '\u2022'
